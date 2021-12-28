@@ -1,6 +1,9 @@
+#Flask Webapp Packages
 from flask import Flask, request, render_template,redirect,url_for
 from threading import Timer
 import  webbrowser
+
+#Arduino Port Packages
 import serial
 import csv
 import time
@@ -29,6 +32,7 @@ import yaml
 # Directory managment 
 import os
 
+#Global Variables
 flag=False
 f=None
 value=""
@@ -39,7 +43,10 @@ generater=""
 process=None
 pflag=True
 data="RealTimeSampleData.csv"
+
+
 app = Flask(__name__)
+
 @app.route('/')
 def index():
     global value
@@ -53,40 +60,54 @@ def startProcess():
     if(flag==False):
         flag=True
         global arduino
+        
+        #Get the POST value and check for '.csv' in that value
+        
         data=request.form['filename']
         if(data[-4:]==".csv"):
             data=data
         else:
             data+=".csv"
         print(data)
+        
+        #Create a Serial object with port,baudrate same as in arduino ino file
+        
         arduino = serial.Serial(port='COM3',baudrate=9600,timeout=1)
-        ##print(arduino.isOpen())
         if(arduino.isOpen() == False):
             arduino.open()
-        ##date=datetime.now()
-
         global f
+        
+        #Open csv file in append mode
+        
         f= open('input/'+data, 'a+',newline='')
         w = csv.writer(f, delimiter = ',')
         time.sleep(2)
+        
+        #Open file to get No. of Rows
+        
         file = open('input/'+data)
         reader = csv.reader(file)
         lines= len(list(reader))
+        
+        #Add header row to that file if lines '0'
+        
         if(lines==0):
             writer = csv.DictWriter(f, fieldnames=["Datetime", "Watts"])
             writer.writeheader()
+            
         while(flag==True and f.closed==False and arduino.isOpen()==True):
-        ##    date=datetime.now()
+            
+            #Get the serial output using readline() and convert it to string
             value = (arduino.readline().decode('utf-8').rstrip())
-            ##print(serial)
+            
+            #Set the values in (datetime,value) format
             value=datetime.now().strftime('%d-%m-%Y - %H:%M:%S.%f')[:-3]+","+str(value)
+            
+            #Write value into csv file
             if(f.closed==False):
                 w.writerow(value.split(','))
             print(value)
     else:
-        #messagebox.showinfo("Error","Port is already running")
-        #easygui.msgbox("This is a message!", title="simple gui")
-        #js2py.eval_js("alert('Error,Port is already running')")
         value="staerrport"
     return redirect(url_for("index"))
 
@@ -94,21 +115,18 @@ def startProcess():
 def stopProcess():
     global flag
     global value
+    
+    #Close the port connection and csv file if port is Open
+    
     if(flag==True):
         flag=False
         global f
         global arduino
         f.close()
         arduino.close()
-        #messagebox.showinfo("Success","Serial Port is successfully closed")
-        #easygui.msgbox("This is a message!", title="simple gui")
-        #js2py.eval_js("alert('Success,Serial Port is successfully closed')")
         value="stpsucclose"
 
     else:
-        #messagebox.showinfo("Error","Error in Closing Serial Port")
-        #easygui.msgbox("This is a message!", title="simple gui")
-        #js2py.eval_js("alert('Error in Closing Serial Port')")
         value="stperrport"
     return redirect(url_for("index"))
 
@@ -119,6 +137,7 @@ def generate():
     global value
     global data
     if(flag==False):
+        
         # Reading the hyper parameters for the pipeline
         with open(f'{os.getcwd()}\\conf.yml') as file:
             conf = yaml.load(file, Loader=yaml.FullLoader)
@@ -226,16 +245,9 @@ def generate():
         plt.savefig("predict.png")
         #plt.show(block=False)
         plt.close()
-        #messagebox.showinfo("Success","Successfully Generated")
-        #print(threading.currentThread().getName())
-        #easygui.msgbox("This is a message!", title="simple gui")
-        #js2py.eval_js("alert('Success, Successfully Generated')")
         value="gensucc"
 
     else:
-        #messagebox.showinfo("Error","Please stop the Serial Port")
-        #easygui.msgbox("This is a message!", title="simple gui")
-        #js2py.eval_js("alert('Error, Please stop the Serial Port')")
         value="generrport"
     return redirect(url_for("index"))
 
