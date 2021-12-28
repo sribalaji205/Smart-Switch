@@ -141,7 +141,7 @@ def generate():
             Y_var='Watts',
             lag=conf.get('lag'),
             LSTM_layer_depth=conf.get('LSTM_layer_depth'),
-            epochs=1,
+            epochs=10,
             train_test_split=conf.get('train_test_split') # The share of data that will be used for validation
         )
 
@@ -184,7 +184,7 @@ def generate():
             Y_var='Watts',
             lag=24,
             LSTM_layer_depth=64,
-            epochs=1,
+            epochs=10,
             train_test_split=0 
         )
 
@@ -195,7 +195,7 @@ def generate():
         n_ahead = 168
         yhat = deep_learner.predict_n_ahead(n_ahead)
         yhat = [y[0][0] for y in yhat]
-        print(yhat)
+
         # Constructing the forecast dataframe
         fc = d.tail(400).copy() 
         fc['type'] = 'original'
