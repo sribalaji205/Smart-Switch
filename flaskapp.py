@@ -1,3 +1,6 @@
+#For Sending Email
+import yagmail
+
 #Flask Webapp Packages
 from flask import Flask, request, render_template,redirect,url_for
 from threading import Timer
@@ -214,6 +217,33 @@ def generate():
         n_ahead = 168
         yhat = deep_learner.predict_n_ahead(n_ahead)
         yhat = [y[0][0] for y in yhat]
+
+        # Amount Calculation
+         units=0.0
+        for i in yhat:
+            units=units+i;
+        if(units < 50):
+            amt = units * 2.60
+            extra = 25
+        elif(units <= 100):
+            amt = 130 + ((units - 50) * 3.25)
+            extra = 35
+        elif(units <= 200):
+            amt = 130 + 162.50 + ((units - 100) * 5.26)
+            extra = 45
+        else:
+            amt = 130 + 162.50 + 526 + ((units - 200) * 8.45)
+            extra = 75
+        bill = amt + extra
+
+        # initiating connection with SMTP server
+        yag = yagmail.SMTP("pysmtp.project@gmail.com", 
+                   "qwerty12345!@#")
+
+        # Adding multiple attachments and mailing them
+        yag.send(["sharanvel2000@gmail.com","t.harish2478@gmail.com","sribalaji055cse@gmail.com"],"Electricity Consumed and Bill",
+                 contents="<h2>Electricity Bill and Units Consumed</h2><p><b>Units: "+str(units)+"</b></p><p><b>Bill   : "+str(round(bill,2))+"</b></p>")
+        print("success")
 
         # Constructing the forecast dataframe
         fc = d.tail(400).copy() 
