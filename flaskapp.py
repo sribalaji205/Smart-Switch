@@ -219,7 +219,7 @@ def generate():
         yhat = [y[0][0] for y in yhat]
 
         # Amount Calculation
-         units=0.0
+        units=0.0
         for i in yhat:
             units=units+i;
         if(units < 50):
