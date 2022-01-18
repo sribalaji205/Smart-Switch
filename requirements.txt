@@ -8,3 +8,4 @@ matplotlib
 flask
 pyserial
 yagmail
+xhtml2pdf

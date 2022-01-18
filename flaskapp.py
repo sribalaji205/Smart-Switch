@@ -1,3 +1,6 @@
+#html 2 pdf convert
+from xhtml2pdf import pisa 
+
 #For Sending Email
 import yagmail
 
@@ -47,7 +50,21 @@ process=None
 pflag=True
 data="RealTimeSampleData.csv"
 
+# Utility function
+def convert_html_to_pdf(source_html, output_filename):
+    # open output file for writing (truncated binary)
+    result_file = open(output_filename, "w+b")
 
+    # convert HTML to PDF
+    pisa_status = pisa.CreatePDF(
+            source_html,                # the HTML to convert
+            dest=result_file)           # file handle to recieve result
+
+    # close output file
+    result_file.close()                 # close output file
+
+    # return False on success and True on errors
+    return pisa_status.err
 app = Flask(__name__)
 
 @app.route('/')
@@ -112,7 +129,7 @@ def startProcess():
             print(value)
     else:
         value="staerrport"
-    return redirect(url_for("index"))
+    return render_template("form.html",value=value)
 
 @app.route('/stopProcess')
 def stopProcess():
@@ -131,7 +148,7 @@ def stopProcess():
 
     else:
         value="stperrport"
-    return redirect(url_for("index"))
+    return render_template("form.html",value=value)
 
 
 @app.route('/generate')
@@ -194,7 +211,7 @@ def generate():
             plt.legend()
             plt.grid()
             ##plt.show()   
-            plt.savefig("trainingdata.png")
+            plt.savefig("output/trainingdata.png")
             #plt.show(block=False)
             plt.close()
             #print("reached")
@@ -235,15 +252,103 @@ def generate():
             amt = 130 + 162.50 + 526 + ((units - 200) * 8.45)
             extra = 75
         bill = amt + extra
+        
+        date=datetime.now().strftime('%d-%m-%Y')
+        name="Sharan"
+        custno=1234
+        city="Madurai"
+        pincode="625020"
+        source_html = """<html>
+        <head>
+        <style>
+        @page{
+        size:A4 landscape;
+        @frame content_frame {          /* Content Frame */
+            left: 25pt; width: 800pt; top: 25pt; height: 700pt;
+          }
+          background-image: url("https://img.freepik.com/free-photo/old-paper-texture-background_118047-1365.jpg?size=626&ext=jpg");
+        }
+        body{
+        font-family:Times New Roman;
+        }
+        .fonts{
+        font-size:18px;
+        text-align:center;
+        }
+        .head{
+        font-size:22px;
+        }
+        .pad{
+        padding:6px;
+        border-radius:10px;
+        }
+        th{
+        padding:10px;
+        }
+        .alignleft{
+        text-align:left;
+        }
+        .alignright{
+        text-align:right;
+        }
+        .space{
+        width:58%;
+        }
+        </style>
+        </head>
+        <body>
+        <div class="head">
+        <p style="text-align:center; font-size:25px;">Tamil Nadu Electricity Board</p>
+        <table width=100%>
+        <tr>
+        <td>Name</td>
+        <td class="space alignleft">"""+str(name)+"""</td>
+        <td>City</td>
+        <td>"""+str(city)+"""</td>
+        </tr>
+        <tr>
+        <td>Customer No.</td>
+        <td class="space alignleft">"""+str(custno)+"""</td>
+        <td>Pincode</td>
+        <td>"""+str(pincode)+"""</td>
+        </tr>
+        <tr>
+        <td>Date</td>
+        <td class="space alignleft">"""+str(date)+"""</td>
+        <td>Units</td>
+        <td>"""+str(round(units,3))+"""</td>
+        </tr>
+        </table>
+        </center>
+        </div>
 
-        # initiating connection with SMTP server
-        yag = yagmail.SMTP("pysmtp.project@gmail.com", 
-                   "qwerty12345!@#")
+        <br>
+        <br>
+        <br>
 
-        # Adding multiple attachments and mailing them
-        yag.send(["sharanvel2000@gmail.com","t.harish2478@gmail.com","sribalaji055cse@gmail.com"],"Electricity Consumed and Bill",
-                 contents="<h2>Electricity Bill and Units Consumed</h2><p><b>Units: "+str(units)+"</b></p><p><b>Bill   : "+str(round(bill,2))+"</b></p>")
-        print("success")
+        <div>
+        <table align=center width=68% border=1>
+        <tr class="fonts">
+        <th>No.</th>
+        <th>Details</th>
+        <th>Amount</th>
+        </tr>
+        <tr style="height:300px;" class="fonts">
+        <td class="pad">16412</td>
+        <td class="pad">CC Charges</td>
+        <td class="pad">"""+str(round(bill,2))+"""</td>
+        </tr>
+        </table>
+        </div>
+        </body>
+        </html>
+        """
+        output_filename = "output/Bill.pdf"
+
+        convert_html_to_pdf(source_html,output_filename)
+        #call the html to pdf conversion function
+
+        
 
         # Constructing the forecast dataframe
         fc = d.tail(400).copy() 
@@ -272,14 +377,23 @@ def generate():
         plt.legend()
         plt.grid()
         #print("reached")
-        plt.savefig("predict.png")
+        plt.savefig("output/prediction.png")
         #plt.show(block=False)
         plt.close()
         value="gensucc"
+        # initiating connection with SMTP server
+        yag = yagmail.SMTP("pysmtp.project@gmail.com", 
+                   "qwerty12345!@#")
+
+        # Adding multiple attachments and mailing them
+        yag.send(["sharanvel2000@gmail.com","t.harish2478@gmail.com","sribalaji055cse@gmail.com"],"Electricity Consumed and Bill",
+                 contents="<h2>Electricity Bill and Units Consumed</h2><p><b>Units: "+str(units)+"</b></p><p><b>Bill   : "+str(round(bill,2))+"</b></p>",
+                 attachments=["output/prediction.png","output/Bill.pdf"])
+        print("success")
 
     else:
         value="generrport"
-    return redirect(url_for("index"))
+    return render_template("form.html",value=value)
 
 @app.route("/formcontrol")
 def formcontrol():
