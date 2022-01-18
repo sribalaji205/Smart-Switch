@@ -120,6 +120,5 @@ nav a:hover {
 
 /* Circuit Diagram Page */
 .circuit img {
-  width: 80%;
-  margin-bottom: 3rem;
+  margin-top: 1rem;
 }
