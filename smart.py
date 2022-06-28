@@ -3,6 +3,8 @@ from xhtml2pdf import pisa
 
 #For Sending Email
 import yagmail
+import smtplib
+from email.message import EmailMessage
 
 #Flask Webapp Packages
 from flask import Flask, request, render_template,redirect,url_for
@@ -92,7 +94,7 @@ def startProcess():
         
         #Create a Serial object with port,baudrate same as in arduino ino file
         
-        arduino = serial.Serial(port='COM3',baudrate=9600,timeout=1)
+        arduino = serial.Serial(port='COM5',baudrate=9600,timeout=1)
         if(arduino.isOpen() == False):
             arduino.open()
         global f
@@ -164,7 +166,7 @@ def generate():
 
         # Reading the data
         print(data)
-        d = pd.read_csv('input/'+data)
+        d = pd.read_csv('input/'+data, skiprows = [i for i in range(1, 15) ])
         d['Datetime'] = [datetime.strptime(x, '%d-%m-%Y - %H:%M:%S.%f') for x in d['Datetime']]
 
         # Making sure there are no duplicated data
@@ -239,26 +241,27 @@ def generate():
         units=0.0
         for i in yhat:
             units=units+i;
-        if(units < 50):
-            amt = units * 2.60
-            extra = 25
-        elif(units <= 100):
-            amt = 130 + ((units - 50) * 3.25)
-            extra = 35
+        if(units < 100):
+            amt = 0
+            extra = 20
         elif(units <= 200):
-            amt = 130 + 162.50 + ((units - 100) * 5.26)
-            extra = 45
+            amt = ((units - 100) * 3.5)
+            extra = 30
+        elif(units>200 and units <=500):
+            amt = ((units-200)*4.6)
+            extra=50
         else:
-            amt = 130 + 162.50 + 526 + ((units - 200) * 8.45)
+            amt = ((units - 300) * 6.6)
             extra = 75
         bill = amt + extra
         
         date=datetime.now().strftime('%d-%m-%Y')
-        name="Sharan"
+        name="VCET"
         custno=1234
         city="Madurai"
-        pincode="625020"
-        source_html = """<html>
+        pincode="625009"
+        source_html = """
+        <html>
         <head>
         <style>
         @page{
@@ -382,14 +385,32 @@ def generate():
         plt.close()
         value="gensucc"
         # initiating connection with SMTP server
-        yag = yagmail.SMTP("pysmtp.project@gmail.com", 
-                   "qwerty12345!@#")
+        user = ''
+        password = ''
 
-        # Adding multiple attachments and mailing them
-        yag.send(["sharanvel2000@gmail.com","t.harish2478@gmail.com","sribalaji055cse@gmail.com"],"Electricity Consumed and Bill",
-                 contents="<h2>Electricity Bill and Units Consumed</h2><p><b>Units: "+str(units)+"</b></p><p><b>Bill   : "+str(round(bill,2))+"</b></p>",
-                 attachments=["output/prediction.png","output/Bill.pdf"])
-        print("success")
+        sent_from = user
+        to = ['']
+        subject = 'Future Bill Details'
+
+        msg = EmailMessage()
+        msg['From'] = sent_from
+        msg['To'] = ", ".join(to)
+        msg['Subject'] = subject
+        msg.set_content('Attached the future prediction and the bill details')
+        with open('output\Bill.pdf','rb') as f:
+                file_data = f.read()
+                file_name = "Bill.pdf"
+        msg.add_attachment(file_data, maintype = 'application', subtype = 'octet-stream', filename = file_name)
+
+        try:
+            smtp_server = smtplib.SMTP_SSL('smtp.mail.yahoo.com', 465)
+            smtp_server.ehlo()
+            smtp_server.login(user, password)
+            smtp_server.send_message(msg)
+            smtp_server.close()
+            print ("Email sent successfully!")
+        except Exception as ex:
+            print ("Something went wrong….",ex)
 
     else:
         value="generrport"
